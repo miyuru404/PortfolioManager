@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface:        248 248 246;
+  --surface-raised: 255 255 255;
+  --surface-border: 220 218 212;
+  --ink:            30 28 26;
+  --ink-muted:      100 97 92;
+  --ink-faint:      165 162 156;
+  --brand-50:       236 252 244;
+  --brand-100:      158 225 203;
+  --brand-400:      29 158 117;
+  --brand-500:      15 110 86;
+  --brand-600:      8 80 65;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: rgb(var(--surface));
+  color: rgb(var(--ink));
+  font-family: "DM Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply bg-surface-raised border border-surface-border rounded-xl p-5;
+  }
+  .btn-primary {
+    @apply bg-brand-400 hover:bg-brand-500 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm;
+  }
+  .btn-ghost {
+    @apply border border-surface-border hover:bg-surface text-ink-muted hover:text-ink font-medium px-4 py-2 rounded-lg transition-colors text-sm;
+  }
+  .input {
+    @apply bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-400 transition-colors w-full;
+  }
+  .label {
+    @apply text-xs font-medium text-ink-muted mb-1 block;
+  }
+  .badge-up {
+    @apply text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400;
+  }
+  .badge-down {
+    @apply text-xs font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 dark:text-red-400;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors;
+  }
+  .sidebar-link.active {
+    @apply bg-brand-50 text-brand-500;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--surface-border)); border-radius: 3px; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.animate-in { animation: fadeIn 0.2s ease forwards; }
