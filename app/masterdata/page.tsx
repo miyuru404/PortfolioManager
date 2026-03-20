@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import StockSearch from "@/components/ui/StockSearch";
 import { createClient } from "@/lib/supabase";
 import { Pencil, Trash2, Check, X, Plus, Database } from "lucide-react";
-import { fmt } from "@/lib/utils";
+import { fmt, round } from "@/lib/utils";
 import type { Holding, CSEStock } from "@/types";
 
 export default function MasterDataPage() {
@@ -35,12 +35,13 @@ export default function MasterDataPage() {
   async function saveEdit(h: Holding) {
     if (!editQty || !editAvg) return;
     setSaving(true);
+    const avgRounded = round(parseFloat(editAvg), 2);
     const { error } = await supabase.from("holdings")
-      .update({ quantity: parseInt(editQty), avg_price: parseFloat(editAvg), updated_at: new Date().toISOString() })
+      .update({ quantity: parseInt(editQty), avg_price: avgRounded, updated_at: new Date().toISOString() })
       .eq("id", h.id);
     if (!error) {
       setHoldings(prev => prev.map(x => x.id === h.id
-        ? { ...x, quantity: parseInt(editQty), avg_price: parseFloat(editAvg) }
+        ? { ...x, quantity: parseInt(editQty), avg_price: avgRounded }
         : x));
       setEditId(null);
       setMsg("Updated successfully");
@@ -58,12 +59,13 @@ export default function MasterDataPage() {
   async function addHolding() {
     if (!addStock || !addQty || !addAvg || !userId) return;
     setSaving(true);
+    const avgRounded = round(parseFloat(addAvg), 2);
     const { error } = await supabase.from("holdings").upsert({
       user_id: userId,
       symbol: addStock.symbol,
       company_name: addStock.name,
       quantity: parseInt(addQty),
-      avg_price: parseFloat(addAvg),
+      avg_price: avgRounded,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id,symbol" });
     if (!error) {
@@ -105,7 +107,10 @@ export default function MasterDataPage() {
             <div className="space-y-3">
               <div>
                 <label className="label">Search stock</label>
-                <StockSearch onSelect={s => { setAddStock(s); setAddAvg(s.lastTradedPrice.toString()); }}
+                <StockSearch onSelect={s => {
+                    setAddStock(s);
+                    setAddAvg(round(s.lastTradedPrice, 2).toString());
+                  }}
                   placeholder="Search by symbol e.g. HNB.N0000..." />
                 {addStock && (
                   <div className="mt-2 flex items-center gap-2">
@@ -229,7 +234,11 @@ export default function MasterDataPage() {
                           </>
                         ) : (
                           <>
-                            <button onClick={() => { setEditId(h.id); setEditQty(h.quantity.toString()); setEditAvg(h.avg_price.toString()); }}
+                            <button onClick={() => {
+                              setEditId(h.id);
+                              setEditQty(h.quantity.toString());
+                              setEditAvg(round(h.avg_price, 2).toString());
+                            }}
                               className="p-1.5 rounded hover:bg-surface">
                               <Pencil className="w-3.5 h-3.5" style={{ color: "rgb(var(--ink-muted))" }} />
                             </button>

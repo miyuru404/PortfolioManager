@@ -1,6 +1,6 @@
 "use client";
 import { TrendingUp, TrendingDown, Minus, Plus, BookmarkPlus } from "lucide-react";
-import { fmt, fmtCompact } from "@/lib/utils";
+import { fmt, fmtCompact, round } from "@/lib/utils";
 import type { CSEStock, Holding } from "@/types";
 
 interface Props {
@@ -15,10 +15,10 @@ export default function StockCard({ stock, holding, onAddToWatchlist, showWatchl
   const isFlat = stock.changePercentage === 0;
 
   const unrealisedValue = holding
-    ? holding.quantity * (stock.lastTradedPrice - holding.avg_price)
+    ? round(holding.quantity * (stock.lastTradedPrice - holding.avg_price), 2)
     : null;
   const unrealisedPct = holding && holding.avg_price > 0
-    ? ((stock.lastTradedPrice - holding.avg_price) / holding.avg_price) * 100
+    ? round(((stock.lastTradedPrice - holding.avg_price) / holding.avg_price) * 100, 2)
     : null;
 
   return (

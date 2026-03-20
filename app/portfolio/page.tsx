@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase";
-import { fmt, fmtCompact } from "@/lib/utils";
+import { fmt, fmtCompact, round } from "@/lib/utils";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -42,10 +42,10 @@ export default function PortfolioPage() {
             const res = await fetch(`/api/cse/price?symbol=${encodeURIComponent(h.symbol)}`);
             const price = await res.json();
             if (price.error) return { ...h, livePrice: null, unrealised: null, unrealisedPct: null, currentValue: null };
-            const lp = price.last_price;
-            const unrealised = h.quantity * (lp - h.avg_price);
-            const unrealisedPct = ((lp - h.avg_price) / h.avg_price) * 100;
-            return { ...h, livePrice: lp, unrealised, unrealisedPct, currentValue: h.quantity * lp };
+            const lp = round(price.last_price, 2);
+            const unrealised = round(h.quantity * (lp - h.avg_price), 2);
+            const unrealisedPct = round(((lp - h.avg_price) / h.avg_price) * 100, 2);
+            return { ...h, livePrice: lp, unrealised, unrealisedPct, currentValue: round(h.quantity * lp, 2) };
           } catch {
             return { ...h, livePrice: null, unrealised: null, unrealisedPct: null, currentValue: null };
           }

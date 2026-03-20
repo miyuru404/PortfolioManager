@@ -5,8 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function round(n: number, decimals = 2): number {
+  return Number(n.toFixed(decimals));
+}
+
 export function fmt(n: number, decimals = 2): string {
-  return n.toLocaleString("en-LK", {
+  const rounded = round(n, decimals);
+  return rounded.toLocaleString("en-LK", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

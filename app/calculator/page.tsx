@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase";
-import { fmt } from "@/lib/utils";
+import { fmt, round } from "@/lib/utils";
 import { Calculator, RotateCcw, Save, TrendingUp, TrendingDown, ChevronDown } from "lucide-react";
 import type { Holding } from "@/types";
 
@@ -39,8 +39,9 @@ export default function CalculatorPage() {
       const res = await fetch(`/api/cse/price?symbol=${encodeURIComponent(symbol)}`);
       const data = await res.json();
       if (!data.error) {
-        setLivePrice(data.last_price);
-        setBuyPrice(data.last_price.toString());
+        const priceRounded = round(data.last_price, 2);
+        setLivePrice(priceRounded);
+        setBuyPrice(priceRounded.toString());
       }
     } catch {}
     setPriceLoading(false);
@@ -63,7 +64,7 @@ export default function CalculatorPage() {
   let newQty = holding?.quantity ?? 0;
   if (holding && qty > 0 && price > 0) {
     newQty = holding.quantity + qty;
-    newAvg = ((holding.quantity * holding.avg_price) + (qty * price)) / newQty;
+    newAvg = round(((holding.quantity * holding.avg_price) + (qty * price)) / newQty, 2);
   }
 
   const avgChange = newAvg - (holding?.avg_price ?? 0);
@@ -72,9 +73,10 @@ export default function CalculatorPage() {
   async function saveTransaction() {
     if (!holding || !userId || qty <= 0 || price <= 0) return;
     setSaving(true);
+    const avgPricePersist = round(newAvg, 2);
     const { error } = await supabase.from("holdings").update({
       quantity: newQty,
-      avg_price: newAvg,
+      avg_price: avgPricePersist,
       updated_at: new Date().toISOString(),
     }).eq("id", holding.id);
 
