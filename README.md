@@ -62,6 +62,7 @@ lib/
 - **Master Data** — Add/edit/delete holdings with share count and average price. Bulk-add via a paste-friendly grid or by importing a CSV/JSON file (each row is validated against the live CSE symbol lookup before saving). Export current holdings as CSV, JSON, or PDF (browser print).
 - **Portfolio & P&L** — Unrealised + realised P&L, pie chart allocation, bar chart per stock, line chart invested over time
 - **Settings** — 4 themes: Light, Dark, Midnight, Dark Green. Manage brokers (commission rate, minimum fee) and the CSE/SEC/CDS levy rates.
+- **Price History** (data layer only so far) — `price_history` / `index_history` tables backfilled from a historical dump plus a daily Vercel Cron job. See `SETUP-PRICE-HISTORY.md`. The Chart tab UI is not built yet.
 
 ## Themes
 

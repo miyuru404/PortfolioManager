@@ -57,6 +57,29 @@ export async function getAllSectors() {
   return data;
 }
 
+export async function getAspiData() {
+  return csePost("aspiData");
+}
+
+export async function getSnpData() {
+  return csePost("snpData");
+}
+
+/** Bulk snapshot of every currently-traded company's latest price in one call. */
+export async function getTodaySharePrices() {
+  return csePost("todaySharePrice");
+}
+
+/**
+ * Historical daily OHLC bars for one symbol. Uses the "charts" endpoint
+ * (confirmed working via a manual data pull — see SETUP-PRICE-HISTORY.md),
+ * which is a different endpoint than chartData/getChartData above.
+ * Dates are "DD-MM-YYYY"; period "1" = daily bars.
+ */
+export async function getChartHistory(symbol: string, from: string, to: string, period = "1") {
+  return csePost("charts", { symbol, from, to, period });
+}
+
 export async function searchBySymbol(symbol: string) {
   try {
     const data = await csePost("companyInfoSummery", { symbol });
