@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { TrendingUp, Home, Calculator, Database, BarChart2, Settings, LogOut, Menu, X } from "lucide-react";
+import { TrendingUp, Home, Calculator, Database, BarChart2, LineChart, Settings, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/calculator", icon: Calculator,  label: "Avg Calculator" },
   { href: "/masterdata", icon: Database,    label: "Master Data" },
   { href: "/portfolio",  icon: BarChart2,   label: "Portfolio & P&L" },
+  { href: "/chart",      icon: LineChart,   label: "Chart" },
   { href: "/settings",   icon: Settings,    label: "Settings" },
 ];
 
