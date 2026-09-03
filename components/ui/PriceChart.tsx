@@ -1,7 +1,7 @@
 "use client";
 import {
   ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, Customized,
+  CartesianGrid, Tooltip, Customized, Brush, ReferenceLine,
 } from "recharts";
 
 export type ChartMode = "line" | "area" | "candlestick";
@@ -98,14 +98,22 @@ function CandlestickLayer(props: any) {
   );
 }
 
+const CROSSHAIR = { stroke: "rgb(120 120 120)", strokeDasharray: "3 3", strokeOpacity: 0.5 };
+
 export default function PriceChart({
   data,
   mode,
   height = 320,
+  showBrush = true,
+  referenceValue,
+  referenceLabel,
 }: {
   data: ChartPoint[];
   mode: ChartMode;
   height?: number;
+  showBrush?: boolean;
+  referenceValue?: number | null;
+  referenceLabel?: string;
 }) {
   if (!data || data.length === 0) {
     return (
@@ -114,6 +122,34 @@ export default function PriceChart({
       </div>
     );
   }
+
+  const brushEl =
+    showBrush && data.length > 5 ? (
+      <Brush
+        dataKey="date"
+        height={22}
+        stroke={BRAND}
+        travellerWidth={8}
+        tickFormatter={formatDate}
+        fill="rgb(var(--surface))"
+      />
+    ) : null;
+
+  const refLine =
+    referenceValue != null ? (
+      <ReferenceLine
+        y={referenceValue}
+        stroke="#a855f7"
+        strokeDasharray="4 4"
+        strokeWidth={1.5}
+        label={{
+          value: referenceLabel ?? `Avg: ${referenceValue.toFixed(2)}`,
+          position: "insideTopRight",
+          fill: "#a855f7",
+          fontSize: 11,
+        }}
+      />
+    ) : null;
 
   if (mode === "candlestick") {
     return (
@@ -136,11 +172,13 @@ export default function PriceChart({
             width={56}
             tickFormatter={(v: number) => v.toLocaleString()}
           />
-          <Tooltip content={<ChartTooltip mode={mode} />} />
+          <Tooltip content={<ChartTooltip mode={mode} />} cursor={CROSSHAIR} />
           {/* invisible series so Recharts computes the y-domain from high/low */}
           <Line dataKey="high" stroke="none" dot={false} isAnimationActive={false} legendType="none" />
           <Line dataKey="low" stroke="none" dot={false} isAnimationActive={false} legendType="none" />
+          {refLine}
           <Customized component={(p: any) => <CandlestickLayer {...p} data={data} />} />
+          {brushEl}
         </ComposedChart>
       </ResponsiveContainer>
     );
@@ -173,7 +211,8 @@ export default function PriceChart({
             width={56}
             tickFormatter={(v: number) => v.toLocaleString()}
           />
-          <Tooltip content={<ChartTooltip mode={mode} />} />
+          <Tooltip content={<ChartTooltip mode={mode} />} cursor={CROSSHAIR} />
+          {refLine}
           <Area
             type="monotone"
             dataKey="value"
@@ -183,6 +222,7 @@ export default function PriceChart({
             isAnimationActive={false}
             dot={false}
           />
+          {brushEl}
         </ComposedChart>
       </ResponsiveContainer>
     );
@@ -208,7 +248,8 @@ export default function PriceChart({
           width={56}
           tickFormatter={(v: number) => v.toLocaleString()}
         />
-        <Tooltip content={<ChartTooltip mode={mode} />} />
+        <Tooltip content={<ChartTooltip mode={mode} />} cursor={CROSSHAIR} />
+        {refLine}
         <Line
           type="monotone"
           dataKey="value"
@@ -217,6 +258,7 @@ export default function PriceChart({
           dot={false}
           isAnimationActive={false}
         />
+        {brushEl}
       </ComposedChart>
     </ResponsiveContainer>
   );
