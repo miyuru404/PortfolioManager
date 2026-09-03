@@ -1,10 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import StockSearch from "@/components/ui/StockSearch";
+import BulkAddHoldings from "@/components/ui/BulkAddHoldings";
 import { createClient } from "@/lib/supabase";
-import { Pencil, Trash2, Check, X, Plus, Database } from "lucide-react";
+import { Pencil, Trash2, Check, X, Plus, Database, Layers, Download, ChevronDown, Printer, FileJson, FileSpreadsheet } from "lucide-react";
 import { fmt, round } from "@/lib/utils";
+import { holdingsToCSV, holdingsToJSON, downloadFile } from "@/lib/import-export";
 import type { Holding, CSEStock } from "@/types";
 
 export default function MasterDataPage() {
@@ -20,6 +22,17 @@ export default function MasterDataPage() {
   const [addAvg, setAddAvg] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [showBulk, setShowBulk] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setShowExportMenu(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -77,32 +90,94 @@ export default function MasterDataPage() {
     setSaving(false);
   }
 
+  function exportJSON() {
+    downloadFile(`holdings-${new Date().toISOString().slice(0, 10)}.json`, holdingsToJSON(holdings), "application/json");
+    setShowExportMenu(false);
+  }
+  function exportCSV() {
+    downloadFile(`holdings-${new Date().toISOString().slice(0, 10)}.csv`, holdingsToCSV(holdings), "text/csv");
+    setShowExportMenu(false);
+  }
+  function exportPDF() {
+    setShowExportMenu(false);
+    window.print();
+  }
+
   const totalInvested = holdings.reduce((s, h) => s + h.quantity * h.avg_price, 0);
 
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        {/* Print-only report header */}
+        <div className="hidden print:block mb-2">
+          <h1 className="text-xl font-semibold">CSE Tracker — Master Data</h1>
+          <p className="text-xs" style={{ color: "rgb(var(--ink-muted))" }}>
+            Generated {new Date().toLocaleString()}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between print:hidden">
           <div>
             <h1 className="text-2xl font-semibold" style={{ color: "rgb(var(--ink))" }}>Master Data</h1>
             <p className="text-sm mt-0.5" style={{ color: "rgb(var(--ink-muted))" }}>
               Manage your holdings — these are used in the average calculator
             </p>
           </div>
-          <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Add holding
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={exportMenuRef}>
+              <button onClick={() => setShowExportMenu(v => !v)} className="btn-ghost flex items-center gap-2">
+                <Download className="w-4 h-4" /> Export <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border shadow-lg overflow-hidden animate-in"
+                  style={{ background: "rgb(var(--surface-raised))", borderColor: "rgb(var(--surface-border))" }}>
+                  <button onClick={exportCSV} className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm hover:bg-surface">
+                    <FileSpreadsheet className="w-4 h-4" style={{ color: "rgb(var(--ink-muted))" }} /> Export as CSV
+                  </button>
+                  <button onClick={exportJSON} className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm hover:bg-surface">
+                    <FileJson className="w-4 h-4" style={{ color: "rgb(var(--ink-muted))" }} /> Export as JSON
+                  </button>
+                  <button onClick={exportPDF} className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm hover:bg-surface">
+                    <Printer className="w-4 h-4" style={{ color: "rgb(var(--ink-muted))" }} /> Export as PDF
+                  </button>
+                </div>
+              )}
+            </div>
+            <button onClick={() => setShowBulk(v => !v)} className="btn-ghost flex items-center gap-2">
+              <Layers className="w-4 h-4" /> Bulk add
+            </button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add holding
+            </button>
+          </div>
         </div>
 
         {msg && (
-          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm animate-in">
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 text-sm animate-in print:hidden">
             {msg}
+          </div>
+        )}
+
+        {/* Bulk add */}
+        {showBulk && userId && (
+          <div className="print:hidden">
+            <BulkAddHoldings
+              userId={userId}
+              existingSymbols={new Set(holdings.map(h => h.symbol.toUpperCase()))}
+              onSaved={(count) => {
+                setShowBulk(false);
+                loadHoldings(userId);
+                setMsg(`Saved ${count} holding${count === 1 ? "" : "s"} successfully`);
+                setTimeout(() => setMsg(""), 4000);
+              }}
+              onCancel={() => setShowBulk(false)}
+            />
           </div>
         )}
 
         {/* Add new holding */}
         {showAdd && (
-          <div className="card animate-in">
+          <div className="card animate-in print:hidden">
             <p className="text-sm font-medium mb-4">Add new holding</p>
             <div className="space-y-3">
               <div>
@@ -190,7 +265,7 @@ export default function MasterDataPage() {
               <thead>
                 <tr style={{ borderBottom: "1px solid rgb(var(--surface-border))" }}>
                   {["Symbol", "Company", "Shares", "Avg Price", "Total Cost", ""].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-medium"
+                    <th key={h} className={`text-left px-4 py-3 text-xs font-medium ${h === "" ? "print:hidden" : ""}`}
                       style={{ color: "rgb(var(--ink-faint))" }}>{h}</th>
                   ))}
                 </tr>
@@ -221,7 +296,7 @@ export default function MasterDataPage() {
                     <td className="px-4 py-3 font-mono" style={{ color: "rgb(var(--ink-muted))" }}>
                       Rs. {fmt(h.quantity * h.avg_price)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 print:hidden">
                       <div className="flex items-center gap-1">
                         {editId === h.id ? (
                           <>
