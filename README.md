@@ -58,10 +58,10 @@ lib/
 
 - **Auth** — Email/password signup, login, forgot password (email reset link), change password in settings
 - **Home** — Multiple named watchlists, live CSE prices, holdings and average per card, stock search by symbol
-- **Average Calculator** — Select from master data holdings, enter buy price/qty/budget, see new average, save to database
+- **Average Calculator** — Buy or sell an existing holding. Pick a broker, and commission + CSE/SEC/CDS/levy fees are calculated automatically — the new average price (buy) or realised P&L (sell) already accounts for them. See `SETUP-COMMISSION.md`.
 - **Master Data** — Add/edit/delete holdings with share count and average price. Bulk-add via a paste-friendly grid or by importing a CSV/JSON file (each row is validated against the live CSE symbol lookup before saving). Export current holdings as CSV, JSON, or PDF (browser print).
 - **Portfolio & P&L** — Unrealised + realised P&L, pie chart allocation, bar chart per stock, line chart invested over time
-- **Settings** — 4 themes: Light, Dark, Midnight, Dark Green
+- **Settings** — 4 themes: Light, Dark, Midnight, Dark Green. Manage brokers (commission rate, minimum fee) and the CSE/SEC/CDS levy rates.
 
 ## Themes
 

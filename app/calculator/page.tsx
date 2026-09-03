@@ -3,8 +3,11 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase";
 import { fmt, round } from "@/lib/utils";
-import { Calculator, RotateCcw, Save, TrendingUp, TrendingDown, ChevronDown } from "lucide-react";
-import type { Holding } from "@/types";
+import { calculateFees, DEFAULT_MARKET_FEES } from "@/lib/fees";
+import { Calculator, RotateCcw, Save, TrendingUp, TrendingDown, ChevronDown, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import type { Holding, Broker, MarketFees } from "@/types";
+
+type Mode = "buy" | "sell";
 
 export default function CalculatorPage() {
   const supabase = createClient();
@@ -13,23 +16,52 @@ export default function CalculatorPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  // Scenario inputs
+  const [mode, setMode] = useState<Mode>("buy");
+
+  // Brokers & fees
+  const [brokers, setBrokers] = useState<Broker[]>([]);
+  const [marketFees, setMarketFees] = useState<MarketFees>(DEFAULT_MARKET_FEES);
+  const [selectedBrokerId, setSelectedBrokerId] = useState("");
+
+  // Buy inputs
   const [buyPrice, setBuyPrice] = useState("");
   const [buyQty, setBuyQty] = useState("");
   const [budget, setBudget] = useState("");
+
+  // Sell inputs
+  const [sellPrice, setSellPrice] = useState("");
+  const [sellQty, setSellQty] = useState("");
+
   // Saving
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) { setUserId(user.id); loadHoldings(user.id); }
+      if (user) {
+        setUserId(user.id);
+        loadHoldings(user.id);
+        loadBrokersAndFees(user.id);
+      }
     });
   }, []);
 
   async function loadHoldings(uid: string) {
     const { data } = await supabase.from("holdings").select("*").eq("user_id", uid).order("symbol");
     if (data) setHoldings(data);
+  }
+
+  async function loadBrokersAndFees(uid: string) {
+    const [{ data: b }, { data: f }] = await Promise.all([
+      supabase.from("brokers").select("*").eq("user_id", uid).order("created_at"),
+      supabase.from("market_fees").select("*").eq("user_id", uid).maybeSingle(),
+    ]);
+    if (b) {
+      setBrokers(b);
+      const def = b.find((x: Broker) => x.is_default) || b[0];
+      if (def) setSelectedBrokerId(def.id);
+    }
+    if (f) setMarketFees(f);
   }
 
   async function fetchLivePrice(symbol: string) {
@@ -42,6 +74,7 @@ export default function CalculatorPage() {
         const priceRounded = round(data.last_price, 2);
         setLivePrice(priceRounded);
         setBuyPrice(priceRounded.toString());
+        setSellPrice(priceRounded.toString());
       }
     } catch {}
     setPriceLoading(false);
@@ -50,38 +83,55 @@ export default function CalculatorPage() {
   function handleSelectSymbol(sym: string) {
     setSelectedSymbol(sym);
     setBuyPrice(""); setBuyQty(""); setBudget("");
+    setSellPrice(""); setSellQty("");
     setLivePrice(null); setSaveMsg("");
     if (sym) fetchLivePrice(sym);
   }
 
+  function switchMode(m: Mode) {
+    setMode(m);
+    setSaveMsg("");
+  }
+
   const holding = holdings.find(h => h.symbol === selectedSymbol);
+  const selectedBroker = brokers.find(b => b.id === selectedBrokerId) || null;
+
+  // ---- Buy scenario ----
   const price = parseFloat(buyPrice) || 0;
   const qty = buyQty ? parseInt(buyQty) : budget ? Math.floor(parseFloat(budget) / price) : 0;
-  const spent = qty * price;
-  const remainingBudget = budget ? parseFloat(budget) - spent : null;
+  const tradeValue = qty * price;
+  const remainingBudget = budget ? parseFloat(budget) - tradeValue : null;
+  const buyFees = calculateFees(tradeValue, selectedBroker, marketFees);
 
   let newAvg = holding?.avg_price ?? 0;
   let newQty = holding?.quantity ?? 0;
   if (holding && qty > 0 && price > 0) {
     newQty = holding.quantity + qty;
-    newAvg = round(((holding.quantity * holding.avg_price) + (qty * price)) / newQty, 2);
+    newAvg = round(((holding.quantity * holding.avg_price) + buyFees.netBuyCost) / newQty, 2);
   }
-
   const avgChange = newAvg - (holding?.avg_price ?? 0);
   const isAveragingDown = avgChange < 0;
 
-  async function saveTransaction() {
+  // ---- Sell scenario ----
+  const sPrice = parseFloat(sellPrice) || 0;
+  const sQty = sellQty ? parseInt(sellQty) : 0;
+  const sTradeValue = sQty * sPrice;
+  const sellFees = calculateFees(sTradeValue, selectedBroker, marketFees);
+  const costBasis = holding ? sQty * holding.avg_price : 0;
+  const realizedPL = round(sellFees.netSellProceeds - costBasis, 2);
+  const remainingQty = (holding?.quantity ?? 0) - sQty;
+  const sellExceedsHolding = !!holding && sQty > holding.quantity;
+
+  async function saveBuy() {
     if (!holding || !userId || qty <= 0 || price <= 0) return;
     setSaving(true);
-    const avgPricePersist = round(newAvg, 2);
     const { error } = await supabase.from("holdings").update({
       quantity: newQty,
-      avg_price: avgPricePersist,
+      avg_price: round(newAvg, 2),
       updated_at: new Date().toISOString(),
     }).eq("id", holding.id);
 
     if (!error) {
-      // Also log as transaction
       await supabase.from("transactions").insert({
         user_id: userId,
         symbol: holding.symbol,
@@ -89,12 +139,54 @@ export default function CalculatorPage() {
         type: "BUY",
         quantity: qty,
         price: price,
-        total_amount: spent,
+        total_amount: tradeValue,
+        broker_id: selectedBrokerId || null,
+        commission_amount: buyFees.commission,
+        levies_amount: buyFees.totalLevies,
+        net_amount: buyFees.netBuyCost,
         notes: "Added via average calculator",
         traded_at: new Date().toISOString(),
       });
       loadHoldings(userId);
-      setSaveMsg(`Updated! New avg: Rs. ${fmt(newAvg)} for ${newQty.toLocaleString()} shares.`);
+      setSaveMsg(`Updated! New avg: Rs. ${fmt(newAvg)} for ${newQty.toLocaleString()} shares (incl. Rs. ${fmt(buyFees.totalFees)} fees).`);
+      handleReset();
+    }
+    setSaving(false);
+  }
+
+  async function saveSell() {
+    if (!holding || !userId || sQty <= 0 || sPrice <= 0 || sellExceedsHolding) return;
+    setSaving(true);
+
+    const { error } = remainingQty === 0
+      ? await supabase.from("holdings").delete().eq("id", holding.id)
+      : await supabase.from("holdings").update({
+          quantity: remainingQty,
+          updated_at: new Date().toISOString(),
+        }).eq("id", holding.id);
+
+    if (!error) {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        symbol: holding.symbol,
+        company_name: holding.company_name,
+        type: "SELL",
+        quantity: sQty,
+        price: sPrice,
+        total_amount: sTradeValue,
+        broker_id: selectedBrokerId || null,
+        commission_amount: sellFees.commission,
+        levies_amount: sellFees.totalLevies,
+        net_amount: sellFees.netSellProceeds,
+        realized_pl: realizedPL,
+        notes: "Sold via average calculator",
+        traded_at: new Date().toISOString(),
+      });
+      loadHoldings(userId);
+      setSaveMsg(
+        `Sold ${sQty.toLocaleString()} shares. Net proceeds Rs. ${fmt(sellFees.netSellProceeds)} · ` +
+        `Realised P&L ${realizedPL >= 0 ? "+" : ""}Rs. ${fmt(realizedPL)}.`
+      );
       handleReset();
     }
     setSaving(false);
@@ -103,7 +195,12 @@ export default function CalculatorPage() {
   function handleReset() {
     setBuyPrice(livePrice?.toString() ?? "");
     setBuyQty(""); setBudget("");
+    setSellPrice(livePrice?.toString() ?? "");
+    setSellQty("");
   }
+
+  const feesForDisplay = mode === "buy" ? buyFees : sellFees;
+  const showFeeBreakdown = mode === "buy" ? tradeValue > 0 : sTradeValue > 0;
 
   return (
     <AppLayout>
@@ -111,8 +208,22 @@ export default function CalculatorPage() {
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "rgb(var(--ink))" }}>Average Calculator</h1>
           <p className="text-sm mt-0.5" style={{ color: "rgb(var(--ink-muted))" }}>
-            Calculate how a new purchase changes your average price
+            Log a buy or sell — commission and CSE fees are calculated automatically
           </p>
+        </div>
+
+        {/* Mode switch */}
+        <div className="inline-flex p-1 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
+          {(["buy", "sell"] as Mode[]).map(m => (
+            <button key={m} onClick={() => switchMode(m)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                mode === m ? "bg-surface-raised shadow-sm" : ""
+              }`}
+              style={mode === m ? { color: "rgb(var(--ink))" } : { color: "rgb(var(--ink-muted))" }}>
+              {m === "buy" ? <ArrowDownCircle className="w-3.5 h-3.5" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
+              {m === "buy" ? "Buy" : "Sell"}
+            </button>
+          ))}
         </div>
 
         {saveMsg && (
@@ -148,6 +259,31 @@ export default function CalculatorPage() {
           )}
         </div>
 
+        {/* Broker selector */}
+        <div className="card">
+          <label className="label">Broker (for commission calculation)</label>
+          {brokers.length === 0 ? (
+            <p className="text-sm" style={{ color: "rgb(var(--ink-muted))" }}>
+              No brokers set up yet — commission will be Rs. 0, only CSE/SEC/CDS fees apply.{" "}
+              <a href="/settings" className="underline" style={{ color: "rgb(var(--brand-400))" }}>
+                Add a broker in Settings →
+              </a>
+            </p>
+          ) : (
+            <div className="relative">
+              <select className="input appearance-none pr-8" value={selectedBrokerId}
+                onChange={e => setSelectedBrokerId(e.target.value)}>
+                <option value="">No broker (fees only)</option>
+                {brokers.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} — {b.commission_rate}%</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                style={{ color: "rgb(var(--ink-faint))" }} />
+            </div>
+          )}
+        </div>
+
         {holding && (
           <>
             {/* Current position */}
@@ -174,41 +310,102 @@ export default function CalculatorPage() {
               </div>
             </div>
 
-            {/* Inputs */}
-            <div className="card space-y-4">
-              <p className="text-sm font-medium" style={{ color: "rgb(var(--ink))" }}>Scenario inputs</p>
-              <div>
-                <label className="label">Buy price (Rs.) — default is live CSE price</label>
-                <input className="input" type="number" step="0.01" placeholder="e.g. 450.00"
-                  value={buyPrice} onChange={e => { setBuyPrice(e.target.value); setBuyQty(""); setBudget(""); }} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+            {mode === "buy" ? (
+              <div className="card space-y-4">
+                <p className="text-sm font-medium" style={{ color: "rgb(var(--ink))" }}>Scenario inputs</p>
                 <div>
-                  <label className="label">Number of shares to buy</label>
-                  <input className="input" type="number" min="1" placeholder="e.g. 100"
-                    value={buyQty} onChange={e => { setBuyQty(e.target.value); setBudget(""); }}
-                    disabled={!!budget} />
+                  <label className="label">Buy price (Rs.) — default is live CSE price</label>
+                  <input className="input" type="number" step="0.01" placeholder="e.g. 450.00"
+                    value={buyPrice} onChange={e => { setBuyPrice(e.target.value); setBuyQty(""); setBudget(""); }} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Number of shares to buy</label>
+                    <input className="input" type="number" min="1" placeholder="e.g. 100"
+                      value={buyQty} onChange={e => { setBuyQty(e.target.value); setBudget(""); }}
+                      disabled={!!budget} />
+                  </div>
+                  <div>
+                    <label className="label">Or enter budget (Rs.)</label>
+                    <input className="input" type="number" step="100" placeholder="e.g. 50000"
+                      value={budget} onChange={e => { setBudget(e.target.value); setBuyQty(""); }}
+                      disabled={!!buyQty} />
+                    {budget && price > 0 && (
+                      <p className="text-xs mt-1" style={{ color: "rgb(var(--ink-faint))" }}>
+                        You can buy <strong>{qty.toLocaleString()}</strong> shares at this price — fees add on top
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button onClick={handleReset} className="btn-ghost flex items-center gap-2 text-xs">
+                  <RotateCcw className="w-3 h-3" /> Reset to defaults
+                </button>
+              </div>
+            ) : (
+              <div className="card space-y-4">
+                <p className="text-sm font-medium" style={{ color: "rgb(var(--ink))" }}>Scenario inputs</p>
+                <div>
+                  <label className="label">Sell price (Rs.) — default is live CSE price</label>
+                  <input className="input" type="number" step="0.01" placeholder="e.g. 450.00"
+                    value={sellPrice} onChange={e => setSellPrice(e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Or enter budget (Rs.)</label>
-                  <input className="input" type="number" step="100" placeholder="e.g. 50000"
-                    value={budget} onChange={e => { setBudget(e.target.value); setBuyQty(""); }}
-                    disabled={!!buyQty} />
-                  {budget && price > 0 && (
-                    <p className="text-xs mt-1" style={{ color: "rgb(var(--ink-faint))" }}>
-                      You can buy <strong>{qty.toLocaleString()}</strong> shares
-                    </p>
-                  )}
+                  <label className="label">Number of shares to sell (you hold {holding.quantity.toLocaleString()})</label>
+                  <input className="input" type="number" min="1" max={holding.quantity} placeholder="e.g. 100"
+                    value={sellQty} onChange={e => setSellQty(e.target.value)} />
+                  <div className="flex items-center justify-between mt-1">
+                    {sellExceedsHolding && (
+                      <p className="text-xs text-red-500">Can't sell more than you hold</p>
+                    )}
+                    <button onClick={() => setSellQty(holding.quantity.toString())}
+                      className="text-xs ml-auto" style={{ color: "rgb(var(--brand-500))" }}>
+                      Sell all
+                    </button>
+                  </div>
                 </div>
+                <button onClick={handleReset} className="btn-ghost flex items-center gap-2 text-xs">
+                  <RotateCcw className="w-3 h-3" /> Reset to defaults
+                </button>
               </div>
+            )}
 
-              <button onClick={handleReset} className="btn-ghost flex items-center gap-2 text-xs">
-                <RotateCcw className="w-3 h-3" /> Reset to defaults
-              </button>
-            </div>
+            {/* Fee breakdown */}
+            {showFeeBreakdown && (
+              <div className="card">
+                <p className="text-sm font-medium mb-3" style={{ color: "rgb(var(--ink))" }}>
+                  Commission & fees{selectedBroker ? ` — ${selectedBroker.name}` : ""}
+                </p>
+                <div className="space-y-1.5 text-sm">
+                  {[
+                    ["Trade value", feesForDisplay.tradeValue],
+                    ["Broker commission", feesForDisplay.commission],
+                    ["CSE Fee", feesForDisplay.cseFee],
+                    ["SEC Cess", feesForDisplay.secCess],
+                    ["CDS Fee", feesForDisplay.cdsFee],
+                    ["Share Transaction Levy", feesForDisplay.shareTransactionLevy],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="flex justify-between">
+                      <span style={{ color: "rgb(var(--ink-muted))" }}>{label}</span>
+                      <span className="font-mono">Rs. {fmt(value as number)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-1.5 mt-1.5 border-t font-medium"
+                    style={{ borderColor: "rgb(var(--surface-border))" }}>
+                    <span>Total fees</span>
+                    <span className="font-mono">Rs. {fmt(feesForDisplay.totalFees)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold" style={{ color: "rgb(var(--ink))" }}>
+                    <span>{mode === "buy" ? "Total cost" : "Net proceeds"}</span>
+                    <span className="font-mono">
+                      Rs. {fmt(mode === "buy" ? feesForDisplay.netBuyCost : feesForDisplay.netSellProceeds)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Result */}
-            {qty > 0 && price > 0 && (
+            {mode === "buy" && qty > 0 && price > 0 && (
               <div className="card animate-in">
                 <p className="text-sm font-medium mb-4" style={{ color: "rgb(var(--ink))" }}>
                   Scenario result
@@ -219,8 +416,8 @@ export default function CalculatorPage() {
                     <p className="text-xl font-semibold font-mono">{qty.toLocaleString()}</p>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
-                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Amount to invest</p>
-                    <p className="text-xl font-semibold font-mono">Rs. {fmt(spent)}</p>
+                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Total cost (incl. fees)</p>
+                    <p className="text-xl font-semibold font-mono">Rs. {fmt(buyFees.netBuyCost)}</p>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
                     <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Total shares after</p>
@@ -245,22 +442,65 @@ export default function CalculatorPage() {
                   </div>
                 </div>
 
-                {remainingBudget !== null && (
-                  <div className="p-3 rounded-lg mb-4" style={{ background: "rgb(var(--surface))" }}>
-                    <p className="text-xs" style={{ color: "rgb(var(--ink-muted))" }}>
-                      Remaining from budget:{" "}
-                      <strong className="font-mono">Rs. {fmt(remainingBudget)}</strong>
-                    </p>
-                  </div>
-                )}
+                {remainingBudget !== null && (() => {
+                  const afterFees = remainingBudget - buyFees.totalFees;
+                  return (
+                    <div className="p-3 rounded-lg mb-4" style={{ background: "rgb(var(--surface))" }}>
+                      <p className="text-xs" style={{ color: afterFees < 0 ? "rgb(239 68 68)" : "rgb(var(--ink-muted))" }}>
+                        {afterFees < 0 ? "Over budget once fees are included: " : "Remaining from budget after fees: "}
+                        <strong className="font-mono">Rs. {fmt(Math.abs(afterFees))}</strong>
+                        {afterFees < 0 ? " short" : ""}
+                      </p>
+                    </div>
+                  );
+                })()}
 
-                <button onClick={saveTransaction} disabled={saving}
+                <button onClick={saveBuy} disabled={saving}
                   className="btn-primary w-full flex items-center justify-center gap-2">
                   <Save className="w-4 h-4" />
                   {saving ? "Saving..." : "Add transaction & update master data"}
                 </button>
                 <p className="text-xs mt-2 text-center" style={{ color: "rgb(var(--ink-faint))" }}>
-                  This updates your holding quantity and average price
+                  This updates your holding quantity and average price (fees included)
+                </p>
+              </div>
+            )}
+
+            {mode === "sell" && sQty > 0 && sPrice > 0 && (
+              <div className="card animate-in">
+                <p className="text-sm font-medium mb-4" style={{ color: "rgb(var(--ink))" }}>
+                  Scenario result
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-3 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
+                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Shares to sell</p>
+                    <p className="text-xl font-semibold font-mono">{sQty.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
+                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Net proceeds (after fees)</p>
+                    <p className="text-xl font-semibold font-mono">Rs. {fmt(sellFees.netSellProceeds)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ background: "rgb(var(--surface))" }}>
+                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Shares remaining</p>
+                    <p className="text-xl font-semibold font-mono">{Math.max(remainingQty, 0).toLocaleString()}</p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${realizedPL >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                    <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>Realised P&L</p>
+                    <p className={`text-xl font-semibold font-mono ${realizedPL >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      {realizedPL >= 0 ? "+" : ""}Rs. {fmt(realizedPL)}
+                    </p>
+                  </div>
+                </div>
+
+                <button onClick={saveSell} disabled={saving || sellExceedsHolding}
+                  className="btn-primary w-full flex items-center justify-center gap-2">
+                  <Save className="w-4 h-4" />
+                  {saving ? "Saving..." : "Record sale & update master data"}
+                </button>
+                <p className="text-xs mt-2 text-center" style={{ color: "rgb(var(--ink-faint))" }}>
+                  {remainingQty === 0
+                    ? "This sells your entire position and removes it from master data"
+                    : "This reduces your holding quantity (average price stays the same)"}
                 </p>
               </div>
             )}

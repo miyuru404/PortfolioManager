@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { createClient } from "@/lib/supabase";
 import { applyTheme } from "@/lib/themes";
+import CommissionSettings from "@/components/ui/CommissionSettings";
 import { Eye, EyeOff, Check, Moon, Sun, Zap, Leaf } from "lucide-react";
 import type { Theme, Profile } from "@/types";
 
@@ -101,6 +102,9 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {/* Brokers & fees */}
+        {profile && <CommissionSettings userId={profile.id} />}
 
         {/* Theme */}
         <div className="card">

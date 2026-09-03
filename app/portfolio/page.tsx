@@ -61,10 +61,15 @@ export default function PortfolioPage() {
   const totalUnrealised = totalCurrent - totalInvested;
   const totalUnrealisedPct = totalInvested > 0 ? (totalUnrealised / totalInvested) * 100 : 0;
 
-  // Realised P&L from sell transactions
+  // Realised P&L from sell transactions. Sells logged via the Average
+  // Calculator store the true realised P&L (net-of-fees proceeds minus the
+  // cost basis at the time of sale) directly on the transaction row.
+  // Older sell rows without that field (logged before commission tracking
+  // was added) fall back to the previous approximation.
   const realisedPL = transactions
     .filter(t => t.type === "SELL")
     .reduce((s, t) => {
+      if (t.realized_pl !== undefined && t.realized_pl !== null) return s + t.realized_pl;
       const buyCost = t.quantity * (enriched.find(h => h.symbol === t.symbol)?.avg_price ?? t.price);
       return s + (t.total_amount - buyCost);
     }, 0);
