@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import StockSearch from "@/components/ui/StockSearch";
 import StockCard from "@/components/ui/StockCard";
+import { StockCardSkeleton } from "@/components/ui/Skeleton";
 import { createClient } from "@/lib/supabase";
 import { Plus, FolderPlus, X, ChevronDown, RefreshCw, Bookmark } from "lucide-react";
 import type { Watchlist, WatchlistItem, Holding, CSEStock } from "@/types";
@@ -250,7 +251,7 @@ export default function HomePage() {
               {wlItems.map(({ item, stock, holding, loading }) => (
                 <div key={item.id} className="relative group">
                   {loading ? (
-                    <div className="card animate-pulse h-32" />
+                    <StockCardSkeleton />
                   ) : stock ? (
                     <StockCard
                       stock={stock}

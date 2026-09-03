@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase";
 import { RefreshCw, X } from "lucide-react";
 import PriceChart, { ChartMode, ChartPoint } from "./PriceChart";
+import { ChartSkeleton } from "./Skeleton";
 
 export type ChartSource =
   | { kind: "index"; name: "ASPI" | "SPSL20"; label: string }
@@ -244,6 +245,8 @@ export default function ChartCard({
 
       {error ? (
         <div className="text-sm text-red-500 py-8 text-center">{error}</div>
+      ) : loading && data.length === 0 ? (
+        <ChartSkeleton height={320} />
       ) : (
         <>
           <PriceChart

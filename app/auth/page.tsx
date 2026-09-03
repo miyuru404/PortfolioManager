@@ -77,7 +77,7 @@ function AuthPageInner() {
           <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
-          <span className="text-white font-semibold text-lg">CSE Tracker</span>
+          <span className="text-white font-semibold text-lg">Ceylon Capital</span>
         </div>
         <div>
           <h1 className="text-4xl font-semibold text-white leading-tight mb-4">
@@ -102,7 +102,7 @@ function AuthPageInner() {
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <TrendingUp className="w-5 h-5" style={{color:"rgb(var(--brand-400))"}} />
-            <span className="font-semibold">CSE Tracker</span>
+            <span className="font-semibold">Ceylon Capital</span>
           </div>
 
           <h2 className="text-2xl font-semibold mb-1" style={{color:"rgb(var(--ink))"}}>

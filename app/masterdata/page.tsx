@@ -110,7 +110,7 @@ export default function MasterDataPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Print-only report header */}
         <div className="hidden print:block mb-2">
-          <h1 className="text-xl font-semibold">CSE Tracker — Master Data</h1>
+          <h1 className="text-xl font-semibold">Ceylon Capital — Master Data</h1>
           <p className="text-xs" style={{ color: "rgb(var(--ink-muted))" }}>
             Generated {new Date().toLocaleString()}
           </p>

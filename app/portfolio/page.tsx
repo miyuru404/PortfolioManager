@@ -9,6 +9,7 @@ import {
   LineChart, Line, Legend
 } from "recharts";
 import { TrendingUp, TrendingDown, DollarSign, Percent, BarChart2 } from "lucide-react";
+import FlashNumber from "@/components/ui/FlashNumber";
 import type { Holding, Transaction } from "@/types";
 
 interface EnrichedHolding extends Holding {
@@ -102,7 +103,6 @@ export default function PortfolioPage() {
 
   const summaryCards = [
     { label: "Total invested", value: `Rs. ${fmtCompact(totalInvested)}`, icon: DollarSign, color: "text-ink" },
-    { label: "Current value", value: `Rs. ${fmtCompact(totalCurrent)}`, icon: TrendingUp, color: "text-ink" },
     {
       label: "Unrealised P&L",
       value: `${totalUnrealised >= 0 ? "+" : ""}Rs. ${fmtCompact(Math.abs(totalUnrealised))}`,
@@ -138,8 +138,29 @@ export default function PortfolioPage() {
           </p>
         </div>
 
+        {/* Hero: current portfolio value */}
+        {enriched.length > 0 && (
+          <div className="card !p-6">
+            <p className="text-xs uppercase tracking-wide font-medium" style={{ color: "rgb(var(--ink-faint))" }}>
+              Current Value
+            </p>
+            <div className="flex items-baseline gap-3 flex-wrap mt-1">
+              <FlashNumber
+                value={totalCurrent}
+                formatter={(v) => `Rs. ${fmtCompact(v)}`}
+                className="text-4xl font-semibold font-mono"
+              />
+              <span className={`text-base font-medium ${totalUnrealised >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {totalUnrealised >= 0 ? "+" : ""}Rs. {fmtCompact(Math.abs(totalUnrealised))} (
+                {totalUnrealisedPct >= 0 ? "+" : ""}
+                {fmt(totalUnrealisedPct, 1)}%)
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {summaryCards.map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="card">
               <div className="flex items-center gap-2 mb-2">

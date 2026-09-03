@@ -1,6 +1,8 @@
 "use client";
 import { TrendingUp, TrendingDown, Minus, Plus, BookmarkPlus } from "lucide-react";
 import { fmt, fmtCompact, round } from "@/lib/utils";
+import FlashNumber from "./FlashNumber";
+import Sparkline from "./Sparkline";
 import type { CSEStock, Holding } from "@/types";
 
 interface Props {
@@ -43,8 +45,12 @@ export default function StockCard({ stock, holding, onAddToWatchlist, showWatchl
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-semibold font-mono" style={{ color: "rgb(var(--ink))" }}>
-            Rs. {fmt(stock.lastTradedPrice)}
+          <p className="text-xl font-semibold" style={{ color: "rgb(var(--ink))" }}>
+            <FlashNumber
+              value={stock.lastTradedPrice}
+              formatter={(v) => `Rs. ${fmt(v)}`}
+              className="font-mono"
+            />
           </p>
           <div className={`flex items-center justify-end gap-1 mt-0.5 ${
             isFlat ? "text-ink-muted" : isUp ? "text-green-500" : "text-red-500"
@@ -57,6 +63,11 @@ export default function StockCard({ stock, holding, onAddToWatchlist, showWatchl
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-1">
+        <Sparkline symbol={stock.symbol} />
+        <span className="text-[10px] tracking-wide" style={{ color: "rgb(var(--ink-faint))" }}>30D</span>
       </div>
 
       {holding && (

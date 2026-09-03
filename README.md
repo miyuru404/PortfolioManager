@@ -1,4 +1,4 @@
-# CSE Tracker — Setup Guide
+# Ceylon Capital — Setup Guide
 
 A full-stack portfolio tracker for the Colombo Stock Exchange built with Next.js 14, Supabase, and Tailwind CSS.
 

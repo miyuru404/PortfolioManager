@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CSE Tracker — Colombo Stock Exchange Portfolio",
+  title: "Ceylon Capital — Colombo Stock Exchange Portfolio",
   description: "Track your CSE portfolio, calculate averages, and visualise gains.",
 };
 

@@ -33,7 +33,7 @@ export default function Sidebar() {
           style={{background:"rgb(var(--brand-400))"}}>
           <TrendingUp className="w-4 h-4 text-white" />
         </div>
-        <span className="font-semibold text-sm">CSE Tracker</span>
+        <span className="font-semibold text-sm">Ceylon Capital</span>
       </div>
       <nav className="flex-1 p-3 space-y-0.5">
         {NAV.map(({ href, icon: Icon, label }) => (
@@ -57,7 +57,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-surface-border h-screen sticky top-0"
+      <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-surface-border h-screen sticky top-0 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.08)]"
         style={{background:"rgb(var(--surface-raised))"}}>
         <SidebarContent />
       </aside>
@@ -70,7 +70,7 @@ export default function Sidebar() {
             style={{background:"rgb(var(--brand-400))"}}>
             <TrendingUp className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-semibold text-sm">CSE Tracker</span>
+          <span className="font-semibold text-sm">Ceylon Capital</span>
         </div>
         <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg hover:bg-surface">
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

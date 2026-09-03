@@ -27,7 +27,10 @@ body {
 
 @layer components {
   .card {
-    @apply bg-surface-raised border border-surface-border rounded-xl p-5;
+    @apply bg-surface-raised border border-surface-border rounded-xl p-5 shadow-sm transition-shadow;
+  }
+  .card:hover {
+    @apply shadow-md;
   }
   .btn-primary {
     @apply bg-brand-400 hover:bg-brand-500 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm;
@@ -53,6 +56,12 @@ body {
   .sidebar-link.active {
     @apply bg-brand-50 text-brand-500;
   }
+}
+
+/* Financial figures line up in columns instead of jittering as digits change. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Scrollbar */
