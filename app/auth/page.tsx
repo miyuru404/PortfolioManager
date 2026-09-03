@@ -1,12 +1,12 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TrendingUp, Eye, EyeOff, ArrowRight, RotateCcw } from "lucide-react";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
-export default function AuthPage() {
+function AuthPageInner() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +18,14 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth_failed") {
+      setError("Google sign-in failed. Please try again.");
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +55,17 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGoogleSignIn() {
+    setError(""); setMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) setError(error.message);
   }
 
   return (
@@ -149,6 +167,28 @@ export default function AuthPage() {
             </button>
           </form>
 
+          {(mode === "login" || mode === "signup") && (
+            <>
+              <div className="flex items-center gap-3 my-5">
+                <div className="h-px flex-1" style={{background:"rgb(var(--ink-faint))"}} />
+                <span className="text-xs" style={{color:"rgb(var(--ink-muted))"}}>OR</span>
+                <div className="h-px flex-1" style={{background:"rgb(var(--ink-faint))"}} />
+              </div>
+
+              <button type="button" onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border font-medium text-sm"
+                style={{borderColor:"rgb(var(--ink-faint))", color:"rgb(var(--ink))"}}>
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.58-5.17 3.58-8.82z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.87-3c-1.08.72-2.46 1.15-4.08 1.15-3.14 0-5.8-2.12-6.75-4.96H1.26v3.11A12 12 0 0 0 12 24z"/>
+                  <path fill="#FBBC05" d="M5.25 14.28A7.2 7.2 0 0 1 4.86 12c0-.79.14-1.56.39-2.28V6.61H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l3.99-3.11z"/>
+                  <path fill="#EA4335" d="M12 4.77c1.76 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.26 6.61l3.99 3.11C6.2 6.89 8.86 4.77 12 4.77z"/>
+                </svg>
+                Continue with Google
+              </button>
+            </>
+          )}
+
           <div className="mt-6 space-y-3 text-center">
             {mode === "login" && (
               <>
@@ -184,5 +224,13 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageInner />
+    </Suspense>
   );
 }

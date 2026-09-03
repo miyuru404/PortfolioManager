@@ -1,152 +1,74 @@
-# Google Authentication Setup Guide
+# Google Sign-In Setup (via Supabase Auth)
 
-## 1. Install Dependencies
+This app already uses Supabase for email/password auth (`app/auth/page.tsx`).
+Google sign-in is added the same way, through Supabase's built-in OAuth
+support — no NextAuth, no Prisma, no separate database needed.
 
-Run this command to install all required packages:
+## 1. Create Google OAuth credentials
 
-```bash
-npm install next-auth@^4.24.5 @auth/prisma-adapter@^1.0.12 @prisma/client@^5.8.0 bcryptjs@^2.4.3
-npm install -D prisma@^5.8.0
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/) → create/select a project.
+2. **APIs & Services → OAuth consent screen** — configure it (External, add your app name/support email). Publish it (or add yourself as a test user) so sign-in isn't blocked.
+3. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → Application type: **Web application**.
+4. Add this **Authorized redirect URI** (get the exact value from Supabase in step 2 below — it looks like):
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+5. Copy the **Client ID** and **Client Secret**.
+
+## 2. Enable the Google provider in Supabase
+
+1. Supabase Dashboard → your project → **Authentication → Providers → Google**.
+2. Toggle it on, paste the Client ID and Client Secret from step 1.
+3. Supabase shows you the exact callback URL to use in Google Cloud Console — copy it there if you haven't already.
+4. **Authentication → URL Configuration**:
+   - **Site URL**: your production URL, e.g. `https://your-app.vercel.app`
+   - **Redirect URLs**: add
+     ```
+     http://localhost:3000/auth/callback
+     https://your-app.vercel.app/auth/callback
+     ```
+     (add any Vercel preview-deployment domains too, or a wildcard like `https://*.vercel.app/auth/callback` if you use previews)
+
+## 3. App code (already done in this repo)
+
+- `app/auth/page.tsx` has a "Continue with Google" button calling
+  `supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${origin}/auth/callback` } })`.
+- `app/auth/callback/route.ts` receives the redirect, exchanges the `code`
+  for a session via `supabase.auth.exchangeCodeForSession(code)`, and
+  redirects into the app.
+
+No new npm packages, no Prisma schema, and no `DATABASE_URL` are required —
+Supabase manages the OAuth token exchange and the user record itself, and
+existing email/password users are automatically matched by email.
+
+## 4. Environment variables
+
+Only the existing Supabase vars are needed at the app level:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-## 2. Get Google OAuth Credentials
+The Google Client ID/Secret live in the Supabase dashboard (step 2), not in
+`.env.local` or Vercel's environment variables — the Next.js app never talks
+to Google directly.
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google+ API:
-   - Go to "APIs & Services" > "Library"
-   - Search for "Google+ API" and enable it
-4. Create OAuth 2.0 credentials:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Choose "Web application"
-   - Add authorized redirect URIs:
-     - Development: `http://localhost:3000/api/auth/callback/google`
-     - Production: `https://yourdomain.com/api/auth/callback/google`
-5. Copy the Client ID and Client Secret
+## 5. Test it
 
-## 3. Set Up Environment Variables
-
-Create a `.env.local` file in your project root (copy from `.env.example`):
-
-```bash
-GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_generated_secret_here
-DATABASE_URL=your_database_connection_string
-```
-
-To generate NEXTAUTH_SECRET, run:
-```bash
-openssl rand -base64 32
-```
-
-## 4. Update Your Database Schema
-
-If you already have a User model, you need to:
-
-1. **Backup your database first!**
-2. Merge the provided `prisma/schema.prisma` with your existing schema
-3. Make sure your User model includes these fields:
-   - `id` (String, required)
-   - `email` (String, unique)
-   - `password` (String, optional - for existing users)
-   - `accounts` (Account relation)
-   - `sessions` (Session relation)
-
-4. Run the migration:
-```bash
-npx prisma migrate dev --name add-oauth-support
-```
-
-## 5. Database Migration for Existing Users
-
-Your existing users will automatically work! Here's how:
-
-- **Existing users** can still sign in with email/password
-- When they sign in with Google (same email), their Google account gets linked automatically
-- They can then use either method to sign in
-
-## 6. Test the Setup
-
-1. Start your development server:
-```bash
-npm run dev
-```
-
-2. Visit `http://localhost:3000/auth/signin`
-3. Try signing in with both methods
-
-## 7. Protect Your Routes
-
-Example of protecting a page:
-
-```javascript
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/router"
-
-export default function ProtectedPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  if (status === "loading") {
-    return <div>Loading...</div>
-  }
-
-  if (!session) {
-    router.push("/auth/signin")
-    return null
-  }
-
-  return (
-    <div>
-      <h1>Protected Content</h1>
-      <p>Welcome {session.user.email}</p>
-    </div>
-  )
-}
-```
-
-## 8. API Route Protection
-
-Example of protecting an API route:
-
-```javascript
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "./auth/[...nextauth]"
-
-export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions)
-
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" })
-  }
-
-  // Your protected API logic here
-  res.status(200).json({ data: "Protected data" })
-}
-```
-
-## Files Created
-
-- `pages/api/auth/[...nextauth].js` - NextAuth configuration with Google + Credentials
-- `pages/auth/signin.js` - Sign-in page with both Google and email/password
-- `pages/auth/error.js` - Error page for authentication errors
-- `pages/_app.js` - SessionProvider wrapper
-- `prisma/schema.prisma` - Database schema for authentication
-- `.env.example` - Environment variables template
-
-## Important Notes
-
-- The automatic account linking happens when a user with an existing email signs in with Google
-- Existing users can continue using their passwords
-- No data loss occurs - all user data is preserved
-- You can remove password authentication later if all users migrate to Google
+1. `npm run dev`, visit `http://localhost:3000/auth`.
+2. Click "Continue with Google" → should redirect to Google, then back to
+   `/auth/callback`, then to `/home`.
+3. Deploy to Vercel and re-test on the production URL once the Site URL /
+   Redirect URLs in Supabase include it.
 
 ## Troubleshooting
 
-- If Google sign-in fails, check your redirect URIs match exactly
-- Make sure all environment variables are set correctly
-- Ensure your database is running and accessible
-- Check the browser console and server logs for errors
+- **"redirect_uri_mismatch"** — the URI Google is redirecting to doesn't
+  exactly match one in the Google Cloud Console credentials. It must be the
+  Supabase callback URL (`https://<ref>.supabase.co/auth/v1/callback`), not
+  your app's URL.
+- **Redirected back to `/auth?error=oauth_failed`** — check the Supabase
+  Authentication logs (Dashboard → Logs → Auth) for the underlying error.
+- **Works on localhost but not on Vercel** — add the Vercel domain to
+  Supabase's Site URL / Redirect URLs (step 2).
