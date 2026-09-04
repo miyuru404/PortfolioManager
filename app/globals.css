@@ -3,17 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --surface:        248 248 246;
-  --surface-raised: 255 255 255;
-  --surface-border: 220 218 212;
-  --ink:            30 28 26;
-  --ink-muted:      100 97 92;
-  --ink-faint:      165 162 156;
-  --brand-50:       236 252 244;
-  --brand-100:      158 225 203;
-  --brand-400:      29 158 117;
-  --brand-500:      15 110 86;
-  --brand-600:      8 80 65;
+  --font-sans: "Archivo";
+  --font-mono: "DM Mono";
+
+  --surface:        243 242 242;
+  --surface-raised: 243 242 242;
+  --surface-border: 210 207 207;
+  --ink:            32 30 29;
+  --ink-muted:      110 107 107;
+  --ink-faint:      160 156 156;
+  --brand-50:       234 250 241;
+  --brand-100:      201 240 220;
+  --brand-400:      18 165 111;
+  --brand-500:      13 138 92;
+  --brand-600:      7 107 71;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,7 +24,7 @@
 body {
   background-color: rgb(var(--surface));
   color: rgb(var(--ink));
-  font-family: "DM Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -30,16 +33,21 @@ body {
     @apply bg-surface-raised border border-surface-border rounded-xl p-5 transition-colors;
   }
   .btn-primary {
-    @apply bg-brand-400 hover:bg-brand-500 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm;
+    @apply bg-brand-400 hover:bg-brand-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-xs uppercase tracking-wide;
   }
   .btn-ghost {
-    @apply border border-surface-border hover:bg-surface text-ink-muted hover:text-ink font-medium px-4 py-2 rounded-lg transition-colors text-sm;
+    @apply border border-surface-border hover:bg-surface text-ink-muted hover:text-ink font-semibold px-4 py-2 rounded-lg transition-colors text-xs uppercase tracking-wide;
   }
   .input {
     @apply bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-400 transition-colors w-full;
   }
   .label {
     @apply text-xs font-medium text-ink-muted mb-1 block;
+  }
+  /* Uppercase, tracked micro-label — the Revamp design's signature caption
+     style used for stat headings, table headers and hero eyebrows. */
+  .stat-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-ink-faint;
   }
   .badge-up {
     @apply text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400;
@@ -48,10 +56,10 @@ body {
     @apply text-xs font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 dark:text-red-400;
   }
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors border-l-2 border-transparent;
+    @apply flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors border-l-2 border-transparent rounded-r-lg;
   }
   .sidebar-link.active {
-    @apply text-ink border-brand-500;
+    @apply text-ink border-brand-500 bg-black/[0.03] dark:bg-white/[0.05];
   }
 }
 
@@ -61,9 +69,11 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
-/* Serif treatment for hero/statement-style numbers (Quiet Premium direction). */
-.font-hero {
-  font-family: "Source Serif 4", ui-serif, Georgia, serif;
+/* Bold display treatment for hero numerals and headings (Revamp direction). */
+.font-heading {
+  font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 /* Scrollbar */
