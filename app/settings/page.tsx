@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import { createClient } from "@/lib/supabase";
 import { applyTheme } from "@/lib/themes";
 import CommissionSettings from "@/components/ui/CommissionSettings";
@@ -8,8 +9,8 @@ import { Eye, EyeOff, Check, Moon, Sun, Zap, Leaf } from "lucide-react";
 import type { Theme, Profile } from "@/types";
 
 const THEMES: { id: Theme; label: string; icon: React.ReactNode; preview: string[] }[] = [
-  { id: "light",     label: "Light",      icon: <Sun className="w-4 h-4" />,  preview: ["#F8F8F6","#FFFFFF","#1D9E75"] },
-  { id: "dark",      label: "Dark",       icon: <Moon className="w-4 h-4" />, preview: ["#121214","#1C1C20","#1D9E75"] },
+  { id: "light",     label: "Light",      icon: <Sun className="w-4 h-4" />,  preview: ["#F3F2F2","#F3F2F2","#12A56F"] },
+  { id: "dark",      label: "Dark",       icon: <Moon className="w-4 h-4" />, preview: ["#141414","#141414","#28C387"] },
   { id: "midnight",  label: "Midnight",   icon: <Zap className="w-4 h-4" />,  preview: ["#080A16","#0E1023","#6478F0"] },
   { id: "darkgreen", label: "Dark Green", icon: <Leaf className="w-4 h-4" />, preview: ["#060E0A","#0A160F","#22B45A"] },
 ];
@@ -75,119 +76,121 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "rgb(var(--ink))" }}>Settings</h1>
-          <p className="text-sm mt-0.5" style={{ color: "rgb(var(--ink-muted))" }}>
-            Manage your account and preferences
-          </p>
-        </div>
+      <div className="max-w-4xl mx-auto">
+        <PageHeader title="Settings" subtitle="Account, brokers, exchange rates and appearance" />
 
-        {/* Account info */}
-        {profile && (
-          <div className="card">
-            <p className="text-sm font-medium mb-3" style={{ color: "rgb(var(--ink))" }}>Account</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-2 border-b"
-                style={{ borderColor: "rgb(var(--surface-border))" }}>
-                <span className="text-sm" style={{ color: "rgb(var(--ink-muted))" }}>Email</span>
-                <span className="text-sm font-medium">{profile.email}</span>
-              </div>
-              {profile.full_name && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm" style={{ color: "rgb(var(--ink-muted))" }}>Name</span>
-                  <span className="text-sm font-medium">{profile.full_name}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Brokers & fees */}
-        {profile && <CommissionSettings userId={profile.id} />}
-
-        {/* Theme */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium" style={{ color: "rgb(var(--ink))" }}>Colour theme</p>
-            {themeSaved && (
-              <span className="text-xs flex items-center gap-1 text-green-500">
-                <Check className="w-3 h-3" /> Saved
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {THEMES.map(t => (
-              <button key={t.id} onClick={() => handleTheme(t.id)}
-                className={`p-3 rounded-xl border-2 transition-all text-left ${
-                  activeTheme === t.id ? "border-brand-400" : "border-surface-border hover:border-brand-100"
-                }`}>
-                {/* Preview swatches */}
-                <div className="flex gap-1.5 mb-2.5">
-                  {t.preview.map((c, i) => (
-                    <div key={i} className="w-5 h-5 rounded-full border border-black/10"
-                      style={{ background: c }} />
-                  ))}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: "rgb(var(--ink-muted))" }}>{t.icon}</span>
-                    <span className="text-sm font-medium">{t.label}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* LEFT column */}
+          <div className="space-y-6">
+            {/* Account info */}
+            {profile && (
+              <div className="card">
+                <p className="stat-label mb-3">Account</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 border-b"
+                    style={{ borderColor: "rgb(var(--surface-border))" }}>
+                    <span className="text-sm" style={{ color: "rgb(var(--ink-muted))" }}>Email</span>
+                    <span className="text-sm font-medium">{profile.email}</span>
                   </div>
-                  {activeTheme === t.id && (
-                    <Check className="w-4 h-4" style={{ color: "rgb(var(--brand-400))" }} />
+                  {profile.full_name && (
+                    <div className="flex items-center justify-between py-2">
+                      <span className="text-sm" style={{ color: "rgb(var(--ink-muted))" }}>Name</span>
+                      <span className="text-sm font-medium">{profile.full_name}</span>
+                    </div>
                   )}
                 </div>
-              </button>
-            ))}
-          </div>
-        </div>
+              </div>
+            )}
 
-        {/* Change password */}
-        <div className="card">
-          <p className="text-sm font-medium mb-4" style={{ color: "rgb(var(--ink))" }}>Change password</p>
-          {pwdMsg.text && (
-            <div className={`mb-4 p-3 rounded-lg text-sm ${
-              pwdMsg.ok
-                ? "bg-green-500/10 border border-green-500/20 text-green-600"
-                : "bg-red-500/10 border border-red-500/20 text-red-500"
-            }`}>{pwdMsg.text}</div>
-          )}
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            <div>
-              <label className="label">Current password</label>
-              <div className="relative">
-                <input className="input pr-10" type={showOld ? "text" : "password"}
-                  placeholder="••••••••" value={oldPwd} onChange={e => setOldPwd(e.target.value)} required />
-                <button type="button" onClick={() => setShowOld(!showOld)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {showOld ? <EyeOff className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />
-                           : <Eye className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />}
-                </button>
+            {/* Theme */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <p className="stat-label">Appearance</p>
+                {themeSaved && (
+                  <span className="text-xs flex items-center gap-1 text-green-500">
+                    <Check className="w-3 h-3" /> Saved
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {THEMES.map(t => (
+                  <button key={t.id} onClick={() => handleTheme(t.id)}
+                    className={`rounded-xl border-2 overflow-hidden text-left transition-all ${
+                      activeTheme === t.id ? "border-brand-400" : "border-surface-border hover:border-brand-100"
+                    }`}>
+                    <div className="flex h-9">
+                      {t.preview.map((c, i) => (
+                        <div key={i} style={{ background: c, flex: i === t.preview.length - 1 ? "0 0 30%" : 1 }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: "rgb(var(--ink-muted))" }}>{t.icon}</span>
+                        <span className="text-sm font-medium">{t.label}</span>
+                      </div>
+                      {activeTheme === t.id && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "rgb(var(--brand-400))" }}>
+                          Active
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-            <div>
-              <label className="label">New password</label>
-              <div className="relative">
-                <input className="input pr-10" type={showNew ? "text" : "password"}
-                  placeholder="••••••••" value={newPwd} onChange={e => setNewPwd(e.target.value)}
-                  required minLength={6} />
-                <button type="button" onClick={() => setShowNew(!showNew)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {showNew ? <EyeOff className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />
-                           : <Eye className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />}
+
+            {/* Change password */}
+            <div className="card">
+              <p className="stat-label mb-4">Change password</p>
+              {pwdMsg.text && (
+                <div className={`mb-4 p-3 rounded-lg text-sm ${
+                  pwdMsg.ok
+                    ? "bg-green-500/10 border border-green-500/20 text-green-600"
+                    : "bg-red-500/10 border border-red-500/20 text-red-500"
+                }`}>{pwdMsg.text}</div>
+              )}
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <div>
+                  <label className="label">Current password</label>
+                  <div className="relative">
+                    <input className="input pr-10" type={showOld ? "text" : "password"}
+                      placeholder="••••••••" value={oldPwd} onChange={e => setOldPwd(e.target.value)} required />
+                    <button type="button" onClick={() => setShowOld(!showOld)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {showOld ? <EyeOff className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />
+                               : <Eye className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">New password</label>
+                  <div className="relative">
+                    <input className="input pr-10" type={showNew ? "text" : "password"}
+                      placeholder="••••••••" value={newPwd} onChange={e => setNewPwd(e.target.value)}
+                      required minLength={6} />
+                    <button type="button" onClick={() => setShowNew(!showNew)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {showNew ? <EyeOff className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />
+                               : <Eye className="w-4 h-4" style={{ color: "rgb(var(--ink-faint))" }} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Confirm new password</label>
+                  <input className="input" type="password" placeholder="••••••••"
+                    value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} required />
+                </div>
+                <button type="submit" disabled={pwdLoading} className="btn-primary">
+                  {pwdLoading ? "Updating..." : "Update password"}
                 </button>
-              </div>
+              </form>
             </div>
-            <div>
-              <label className="label">Confirm new password</label>
-              <input className="input" type="password" placeholder="••••••••"
-                value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} required />
-            </div>
-            <button type="submit" disabled={pwdLoading} className="btn-primary">
-              {pwdLoading ? "Updating..." : "Update password"}
-            </button>
-          </form>
+          </div>
+
+          {/* RIGHT column: brokers + exchange/regulatory rates */}
+          <div className="space-y-6">
+            {profile && <CommissionSettings userId={profile.id} />}
+          </div>
         </div>
       </div>
     </AppLayout>

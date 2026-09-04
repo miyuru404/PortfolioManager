@@ -81,7 +81,7 @@ export default function CommissionSettings({ userId }: Props) {
     <>
       {/* Brokers */}
       <div className="card">
-        <p className="text-sm font-medium mb-1" style={{ color: "rgb(var(--ink))" }}>Brokers</p>
+        <p className="stat-label mb-1">Brokers</p>
         <p className="text-xs mb-4" style={{ color: "rgb(var(--ink-muted))" }}>
           Add the brokerage firm(s) you trade through. Their commission rate is applied
           automatically when you log a buy or sell in the Average Calculator.
@@ -148,7 +148,7 @@ export default function CommissionSettings({ userId }: Props) {
       {/* Market fees */}
       <div className="card">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-sm font-medium" style={{ color: "rgb(var(--ink))" }}>Exchange & regulatory fees</p>
+          <p className="stat-label">Exchange &amp; regulatory rates</p>
           {feesMsg && (
             <span className="text-xs flex items-center gap-1 text-green-500">
               <Check className="w-3 h-3" /> {feesMsg}
