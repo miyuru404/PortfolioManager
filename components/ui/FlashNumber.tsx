@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 // Briefly flashes green/red behind a number when its value changes, the
 // way live-market tickers do, so an update reads as "live" rather than
@@ -11,7 +11,7 @@ export default function FlashNumber({
   flashMs = 900,
 }: {
   value: number | null | undefined;
-  formatter?: (v: number) => string;
+  formatter?: (v: number) => ReactNode;
   className?: string;
   flashMs?: number;
 }) {

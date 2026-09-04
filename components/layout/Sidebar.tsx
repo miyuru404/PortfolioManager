@@ -28,7 +28,7 @@ export default function Sidebar() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-surface-border">
+      <div className="flex items-center gap-3 px-4 py-5">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
           style={{background:"rgb(var(--brand-400))"}}>
           <TrendingUp className="w-4 h-4 text-white" />
@@ -57,7 +57,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-surface-border h-screen sticky top-0 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.08)]"
+      <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-surface-border h-screen sticky top-0"
         style={{background:"rgb(var(--surface-raised))"}}>
         <SidebarContent />
       </aside>

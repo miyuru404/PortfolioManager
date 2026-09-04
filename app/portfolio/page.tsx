@@ -21,6 +21,13 @@ interface EnrichedHolding extends Holding {
 
 const COLORS = ["#1D9E75","#378ADD","#D85A30","#7F77DD","#BA7517","#D4537E","#639922","#E24B4A"];
 
+// Splits a "1,234.56"-style formatted number into its whole and decimal
+// parts so the hero figure can render the cents in a smaller, muted size.
+function splitDecimal(formatted: string): [string, string] {
+  const i = formatted.lastIndexOf(".");
+  return i === -1 ? [formatted, ""] : [formatted.slice(0, i), formatted.slice(i)];
+}
+
 export default function PortfolioPage() {
   const supabase = createClient();
   const [enriched, setEnriched] = useState<EnrichedHolding[]>([]);
@@ -138,24 +145,33 @@ export default function PortfolioPage() {
           </p>
         </div>
 
-        {/* Hero: current portfolio value */}
+        {/* Hero: current portfolio value (serif "statement" numeral, Quiet Premium style) */}
         {enriched.length > 0 && (
-          <div className="card !p-6">
-            <p className="text-xs uppercase tracking-wide font-medium" style={{ color: "rgb(var(--ink-faint))" }}>
+          <div className="pb-7 border-b border-surface-border">
+            <p className="text-xs uppercase tracking-widest font-medium" style={{ color: "rgb(var(--ink-faint))" }}>
               Current Value
             </p>
-            <div className="flex items-baseline gap-3 flex-wrap mt-1">
+            <div className="flex items-baseline gap-4 flex-wrap mt-2">
               <FlashNumber
                 value={totalCurrent}
-                formatter={(v) => `Rs. ${fmtCompact(v)}`}
-                className="text-4xl font-semibold font-mono"
+                formatter={(v) => {
+                  const [whole, decimals] = splitDecimal(fmt(v));
+                  return (
+                    <>
+                      Rs.&nbsp;{whole}
+                      <span className="text-xl sm:text-3xl" style={{ color: "rgb(var(--ink-faint))" }}>{decimals}</span>
+                    </>
+                  );
+                }}
+                className="font-hero text-4xl sm:text-6xl tracking-tight"
               />
-              <span className={`text-base font-medium ${totalUnrealised >= 0 ? "text-green-500" : "text-red-500"}`}>
+              <span className={`text-sm font-mono font-medium ${totalUnrealised >= 0 ? "text-green-500" : "text-red-500"}`}>
                 {totalUnrealised >= 0 ? "+" : ""}Rs. {fmtCompact(Math.abs(totalUnrealised))} (
                 {totalUnrealisedPct >= 0 ? "+" : ""}
                 {fmt(totalUnrealisedPct, 1)}%)
               </span>
             </div>
+            <div className="w-14 h-0.5 mt-5" style={{ background: "rgb(var(--brand-500))" }} />
           </div>
         )}
 

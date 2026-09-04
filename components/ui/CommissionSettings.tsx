@@ -113,7 +113,7 @@ export default function CommissionSettings({ userId }: Props) {
                       <Star className="w-3.5 h-3.5" style={{ color: "rgb(var(--ink-faint))" }} />
                     </button>
                   )}
-                  <button onClick={() => deleteBroker(b.id)} className="p-1.5 rounded hover:bg-red-50">
+                  <button onClick={() => deleteBroker(b.id)} className="p-1.5 rounded hover:bg-red-500/10">
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </div>

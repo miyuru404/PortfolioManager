@@ -27,10 +27,7 @@ body {
 
 @layer components {
   .card {
-    @apply bg-surface-raised border border-surface-border rounded-xl p-5 shadow-sm transition-shadow;
-  }
-  .card:hover {
-    @apply shadow-md;
+    @apply bg-surface-raised border border-surface-border rounded-xl p-5 transition-colors;
   }
   .btn-primary {
     @apply bg-brand-400 hover:bg-brand-500 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm;
@@ -51,10 +48,10 @@ body {
     @apply text-xs font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 dark:text-red-400;
   }
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors;
+    @apply flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors border-l-2 border-transparent;
   }
   .sidebar-link.active {
-    @apply bg-brand-50 text-brand-500;
+    @apply text-ink border-brand-500;
   }
 }
 
@@ -62,6 +59,11 @@ body {
 .font-mono {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* Serif treatment for hero/statement-style numbers (Quiet Premium direction). */
+.font-hero {
+  font-family: "Source Serif 4", ui-serif, Georgia, serif;
 }
 
 /* Scrollbar */

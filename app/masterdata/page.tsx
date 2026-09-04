@@ -300,7 +300,7 @@ export default function MasterDataPage() {
                       <div className="flex items-center gap-1">
                         {editId === h.id ? (
                           <>
-                            <button onClick={() => saveEdit(h)} className="p-1.5 rounded hover:bg-green-50">
+                            <button onClick={() => saveEdit(h)} className="p-1.5 rounded hover:bg-green-500/10">
                               <Check className="w-3.5 h-3.5 text-green-500" />
                             </button>
                             <button onClick={() => setEditId(null)} className="p-1.5 rounded hover:bg-surface">
@@ -318,7 +318,7 @@ export default function MasterDataPage() {
                               <Pencil className="w-3.5 h-3.5" style={{ color: "rgb(var(--ink-muted))" }} />
                             </button>
                             <button onClick={() => deleteHolding(h.id)}
-                              className="p-1.5 rounded hover:bg-red-50">
+                              className="p-1.5 rounded hover:bg-red-500/10">
                               <Trash2 className="w-3.5 h-3.5 text-red-400" />
                             </button>
                           </>

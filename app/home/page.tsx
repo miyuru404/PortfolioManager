@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import StockSearch from "@/components/ui/StockSearch";
 import StockCard from "@/components/ui/StockCard";
-import { StockCardSkeleton } from "@/components/ui/Skeleton";
+import StockRow from "@/components/ui/StockRow";
+import { StockCardSkeleton, StockRowSkeleton } from "@/components/ui/Skeleton";
 import { createClient } from "@/lib/supabase";
 import { Plus, FolderPlus, X, ChevronDown, RefreshCw, Bookmark } from "lucide-react";
 import type { Watchlist, WatchlistItem, Holding, CSEStock } from "@/types";
@@ -247,32 +248,32 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="card p-0 divide-y divide-surface-border overflow-hidden">
               {wlItems.map(({ item, stock, holding, loading }) => (
                 <div key={item.id} className="relative group">
                   {loading ? (
-                    <StockCardSkeleton />
+                    <StockRowSkeleton />
                   ) : stock ? (
-                    <StockCard
+                    <StockRow
                       stock={stock}
                       holding={holdings.find(h => h.symbol === item.symbol)}
                     />
                   ) : (
-                    <div className="card">
+                    <div className="flex items-center gap-3 px-5 py-3.5">
                       <span className="font-mono text-xs font-medium px-2 py-0.5 rounded"
                         style={{ background: "rgb(var(--brand-50))", color: "rgb(var(--brand-500))" }}>
                         {item.symbol}
                       </span>
-                      <p className="text-xs mt-2" style={{ color: "rgb(var(--ink-faint))" }}>
+                      <p className="text-xs" style={{ color: "rgb(var(--ink-faint))" }}>
                         Price unavailable
                       </p>
                     </div>
                   )}
                   <button
                     onClick={() => removeFromWatchlist(item.id)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50"
+                    className="absolute top-1/2 -translate-y-1/2 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-500/10"
                     title="Remove from watchlist">
-                    <X className="w-3 h-3 text-red-400" />
+                    <X className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </div>
               ))}

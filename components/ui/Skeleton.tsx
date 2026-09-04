@@ -34,3 +34,21 @@ export function ChartSkeleton({ height = 320 }: { height?: number }) {
     </div>
   );
 }
+
+export function StockRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 px-5 py-3.5">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-16 rounded" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+      <Skeleton className="hidden sm:block shrink-0" style={{ width: 88, height: 32 }} />
+      <div className="shrink-0 w-28 flex flex-col items-end space-y-1.5">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-3 w-12" />
+      </div>
+    </div>
+  );
+}
