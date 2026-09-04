@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase";
 import { RefreshCw, X } from "lucide-react";
+import { fmt } from "@/lib/utils";
 import PriceChart, { ChartMode, ChartPoint } from "./PriceChart";
 import { ChartSkeleton } from "./Skeleton";
 
@@ -169,7 +170,7 @@ export default function ChartCard({
     <div className="rounded-xl border border-surface-border p-4" style={{ background: "rgb(var(--surface-raised))" }}>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{source.label}</h3>
+          <h3 className="stat-label truncate">{source.label}</h3>
           {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-ink-muted shrink-0" />}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -181,7 +182,7 @@ export default function ChartCard({
                 disabled={m === "candlestick" && !canCandlestick}
                 title={m === "candlestick" && !canCandlestick ? "Only available for individual companies" : undefined}
                 className={`px-2.5 py-1 capitalize transition-colors ${
-                  mode === m ? "bg-brand-500 text-white" : "hover:bg-surface"
+                  mode === m ? "bg-brand-400 text-white" : "hover:bg-surface"
                 } ${m === "candlestick" && !canCandlestick ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 {m}
@@ -194,7 +195,7 @@ export default function ChartCard({
                 key={p.key}
                 onClick={() => setPreset(p.key)}
                 className={`px-2 py-1 transition-colors ${
-                  preset === p.key ? "bg-brand-500 text-white" : "hover:bg-surface"
+                  preset === p.key ? "bg-brand-400 text-white" : "hover:bg-surface"
                 }`}
               >
                 {p.label}
@@ -210,12 +211,12 @@ export default function ChartCard({
       </div>
 
       {stats && (
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-lg font-semibold font-mono">{stats.last.toFixed(2)}</span>
-          <span className={`text-sm font-medium ${stats.change >= 0 ? "text-green-500" : "text-red-500"}`}>
+        <div className="flex items-baseline gap-2 mb-2 flex-wrap">
+          <span className="font-heading text-2xl">{fmt(stats.last)}</span>
+          <span className={`text-sm font-medium font-mono ${stats.change >= 0 ? "text-green-500" : "text-red-500"}`}>
             {stats.change >= 0 ? "+" : ""}
-            {stats.change.toFixed(2)} ({stats.changePct >= 0 ? "+" : ""}
-            {stats.changePct.toFixed(2)}%) over {presetLabel === "All" ? "the full period" : presetLabel}
+            {fmt(stats.change)} ({stats.changePct >= 0 ? "+" : ""}
+            {fmt(stats.changePct)}%) over {presetLabel === "All" ? "the full period" : presetLabel}
           </span>
         </div>
       )}
