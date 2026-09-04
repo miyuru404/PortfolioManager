@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
+import PageHeader from "@/components/layout/PageHeader";
 import StockSearch from "@/components/ui/StockSearch";
 import BulkAddHoldings from "@/components/ui/BulkAddHoldings";
 import { createClient } from "@/lib/supabase";
@@ -104,6 +105,7 @@ export default function MasterDataPage() {
   }
 
   const totalInvested = holdings.reduce((s, h) => s + h.quantity * h.avg_price, 0);
+  const totalShares = holdings.reduce((s, h) => s + h.quantity, 0);
 
   return (
     <AppLayout>
@@ -116,20 +118,36 @@ export default function MasterDataPage() {
           </p>
         </div>
 
-        <div className="flex items-center justify-between print:hidden">
-          <div>
-            <h1 className="text-2xl font-semibold" style={{ color: "rgb(var(--ink))" }}>Master Data</h1>
-            <p className="text-sm mt-0.5" style={{ color: "rgb(var(--ink-muted))" }}>
-              Manage your holdings — these are used in the average calculator
-            </p>
+        <div className="print:hidden">
+          <PageHeader title="Master Data" subtitle="The cost basis every other screen is computed from" />
+        </div>
+
+        {/* Summary stats */}
+        {holdings.length > 0 && (
+          <div className="flex flex-wrap gap-x-10 gap-y-3 print:hidden">
+            <div>
+              <p className="stat-label">Companies</p>
+              <p className="font-heading text-2xl mt-1">{holdings.length}</p>
+            </div>
+            <div>
+              <p className="stat-label">Shares</p>
+              <p className="font-heading text-2xl mt-1">{totalShares.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="stat-label">Cost Basis</p>
+              <p className="font-heading text-2xl mt-1">Rs. {fmt(totalInvested)}</p>
+            </div>
           </div>
+        )}
+
+        <div className="flex items-center justify-between border-b border-surface-border pb-4 print:hidden">
           <div className="flex items-center gap-2">
             <div className="relative" ref={exportMenuRef}>
               <button onClick={() => setShowExportMenu(v => !v)} className="btn-ghost flex items-center gap-2">
                 <Download className="w-4 h-4" /> Export <ChevronDown className="w-3.5 h-3.5" />
               </button>
               {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border shadow-lg overflow-hidden animate-in"
+                <div className="absolute left-0 top-full mt-1 z-50 w-44 rounded-xl border shadow-lg overflow-hidden animate-in"
                   style={{ background: "rgb(var(--surface-raised))", borderColor: "rgb(var(--surface-border))" }}>
                   <button onClick={exportCSV} className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm hover:bg-surface">
                     <FileSpreadsheet className="w-4 h-4" style={{ color: "rgb(var(--ink-muted))" }} /> Export as CSV
@@ -146,10 +164,10 @@ export default function MasterDataPage() {
             <button onClick={() => setShowBulk(v => !v)} className="btn-ghost flex items-center gap-2">
               <Layers className="w-4 h-4" /> Bulk add
             </button>
-            <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Add holding
-            </button>
           </div>
+          <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Add holding
+          </button>
         </div>
 
         {msg && (
@@ -234,22 +252,6 @@ export default function MasterDataPage() {
           </div>
         )}
 
-        {/* Summary */}
-        {holdings.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Total companies", value: holdings.length.toString() },
-              { label: "Total shares", value: holdings.reduce((s,h) => s + h.quantity, 0).toLocaleString() },
-              { label: "Total invested", value: `Rs. ${fmt(totalInvested)}` },
-            ].map(m => (
-              <div key={m.label} className="card">
-                <p className="text-xs mb-1" style={{ color: "rgb(var(--ink-faint))" }}>{m.label}</p>
-                <p className="text-base font-semibold font-mono">{m.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Holdings table */}
         {holdings.length === 0 ? (
           <div className="card text-center py-16">
@@ -265,8 +267,7 @@ export default function MasterDataPage() {
               <thead>
                 <tr style={{ borderBottom: "1px solid rgb(var(--surface-border))" }}>
                   {["Symbol", "Company", "Shares", "Avg Price", "Total Cost", ""].map(h => (
-                    <th key={h} className={`text-left px-4 py-3 text-xs font-medium ${h === "" ? "print:hidden" : ""}`}
-                      style={{ color: "rgb(var(--ink-faint))" }}>{h}</th>
+                    <th key={h} className={`stat-label text-left px-4 py-3 ${h === "" ? "print:hidden" : ""}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -297,13 +298,15 @@ export default function MasterDataPage() {
                       Rs. {fmt(h.quantity * h.avg_price)}
                     </td>
                     <td className="px-4 py-3 print:hidden">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {editId === h.id ? (
                           <>
-                            <button onClick={() => saveEdit(h)} className="p-1.5 rounded hover:bg-green-500/10">
+                            <button onClick={() => saveEdit(h)}
+                              className="p-1.5 rounded-md border border-surface-border hover:bg-green-500/10 hover:border-green-500/30">
                               <Check className="w-3.5 h-3.5 text-green-500" />
                             </button>
-                            <button onClick={() => setEditId(null)} className="p-1.5 rounded hover:bg-surface">
+                            <button onClick={() => setEditId(null)}
+                              className="p-1.5 rounded-md border border-surface-border hover:bg-surface">
                               <X className="w-3.5 h-3.5" style={{ color: "rgb(var(--ink-faint))" }} />
                             </button>
                           </>
@@ -314,11 +317,11 @@ export default function MasterDataPage() {
                               setEditQty(h.quantity.toString());
                               setEditAvg(round(h.avg_price, 2).toString());
                             }}
-                              className="p-1.5 rounded hover:bg-surface">
+                              className="p-1.5 rounded-md border border-surface-border hover:bg-surface">
                               <Pencil className="w-3.5 h-3.5" style={{ color: "rgb(var(--ink-muted))" }} />
                             </button>
                             <button onClick={() => deleteHolding(h.id)}
-                              className="p-1.5 rounded hover:bg-red-500/10">
+                              className="p-1.5 rounded-md border border-surface-border hover:bg-red-500/10 hover:border-red-500/30">
                               <Trash2 className="w-3.5 h-3.5 text-red-400" />
                             </button>
                           </>
